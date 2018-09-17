@@ -51,23 +51,20 @@ class Bullet:
         self.speed_y = math.sin(math.radians(angle)) * power
         Bullet.family.append(self)
 
-    @property
-    def x_graph(self):
-        return self.x
-
-    @property
-    def y_graph(self):
-        return display_height - self.y
-
-    @property
-    def angle_graph(self):
-        angle = self.angle - 90
-        return angle % 360
+    # @property
+    # def x_graph(self):
+    #     return self.x
+    #
+    # @property
+    # def y_graph(self):
+    #     return display_height - self.y
 
     @property
     def img(self):
         image = Bullet.init_img
-        return pygame.transform.rotate(image, self.angle_graph)
+        angle = self.angle
+        return pygame.transform.rotate(image, angle)
+
 
     def renew(self):
         self.speed_x *= Bullet.air_resist
@@ -79,7 +76,7 @@ class Bullet:
             del Bullet.family[Bullet.family.index(self)]
 
     def show(self):
-        gameDisplay.blit(self.img, (self.x_graph, self.y_graph))
+        gameDisplay.blit(self.img, (self.x, self.y))
 
 class Tank:
     def __init__(self, x, y, b_color, w_color, length, angle):
@@ -150,9 +147,9 @@ class Buttons:
         TitleRect.center = (self.x+(self.w/2), self.y+(self.h/2))
         gameDisplay.blit(TitleSurf, TitleRect)
 
-def angle_convert(angle):
-    angle = - angle
-    return angle % 360
+# def angle_convert(angle):
+#     angle = - angle
+#     return angle % 360
 
 def quitgame():
     pygame.quit()
@@ -180,9 +177,9 @@ def game_loop():
         if key_press[K_d]:
             player_tank.x += 5
         if key_press[K_e]:
-            player_tank.angle += 5
+            player_tank.angle += 3
         if key_press[K_q]:
-            player_tank.angle -= 5
+            player_tank.angle -= 3
 
         gameDisplay.fill(WHITE)
         for event in pygame.event.get():
@@ -192,9 +189,9 @@ def game_loop():
                 if event.key == K_ESCAPE:
                     quitgame()
                 if event.key == K_SPACE:
-                    Bullet(player_tank.bulletx,
-                           display_height - player_tank.bullety + 10,
-                           angle_convert(player_tank.angle),
+                    Bullet(player_tank.bulletx - 5,
+                           display_height - player_tank.bullety + 12,
+                           player_tank.angle,
                            15)
 
         barrel_angle += ang_change
@@ -203,11 +200,11 @@ def game_loop():
         # logging.debug("bullet angle -> {}".format(bullet.angle))
         # logging.debug("bullet loc -> {},{}".format(bullet.x, bullet.y))
 
-        #barrel check
-        if player_tank.angle >= 270 + barrel_limit:
-            player_tank.angle = 270 + barrel_limit
-        if player_tank.angle <= 270 - barrel_limit:
-            player_tank.angle = 270 - barrel_limit
+        # #barrel check
+        # if player_tank.angle >= 270 + barrel_limit:
+        #     player_tank.angle = 270 + barrel_limit
+        # if player_tank.angle <= 270 - barrel_limit:
+        #     player_tank.angle = 270 - barrel_limit
 
         #wall check
         if player_tank.x < 0:
