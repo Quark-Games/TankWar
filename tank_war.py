@@ -41,6 +41,7 @@ class Bullet:
     init_img = pygame.image.load("bullet.png")
     gravity = 0.3
     air_resist = 0.99
+    family = []
 
     def __init__(self, x, y, angle, power):
         self.x = x
@@ -48,6 +49,7 @@ class Bullet:
         self.angle = angle
         self.speed_x = math.cos(math.radians(angle)) * power
         self.speed_y = math.sin(math.radians(angle)) * power
+        Bullet.family.append(self)
 
     @property
     def x_graph(self):
@@ -73,6 +75,8 @@ class Bullet:
         self.angle = math.degrees(math.atan(self.speed_y / self.speed_x))
         self.x += self.speed_x
         self.y += self.speed_y
+        if self.y < 0:
+            del Bullet.family[Bullet.family.index(self)]
 
     def show(self):
         gameDisplay.blit(self.img, (self.x_graph, self.y_graph))
@@ -146,6 +150,10 @@ class Buttons:
         TitleRect.center = (self.x+(self.w/2), self.y+(self.h/2))
         gameDisplay.blit(TitleSurf, TitleRect)
 
+def angle_convert(angle):
+    angle = - angle
+    return angle % 360
+
 def quitgame():
     pygame.quit()
     quit()
@@ -184,9 +192,13 @@ def game_loop():
                 if event.key == K_ESCAPE:
                     quitgame()
                 if event.key == K_SPACE:
-                    shoot = True
+                    Bullet(player_tank.bulletx,
+                           display_height - player_tank.bullety + 10,
+                           angle_convert(player_tank.angle),
+                           15)
 
         barrel_angle += ang_change
+
 
         # logging.debug("bullet angle -> {}".format(bullet.angle))
         # logging.debug("bullet loc -> {},{}".format(bullet.x, bullet.y))
@@ -202,14 +214,13 @@ def game_loop():
             player_tank.x = 0
         if player_tank.x > display_width - tankbase_w:
             player_tank.x = display_width - tankbase_w
-        #shoot
-        if shoot:
-            bullet = Bullet(player_tank.bulletx, player_tank.bullety, player_tank.angle, 10)
-            shoot = False
-            bullet.show()
+
+        for bullet in Bullet.family:
             bullet.renew()
 
         player_tank.show_tank()
+        for bullet in Bullet.family:
+            bullet.show()
 
         pygame.display.update()
         clock.tick(30)
