@@ -2,6 +2,8 @@ import pygame
 from pygame.locals import *
 import logging
 import math
+import random
+import math
 
 logging.basicConfig(filename="debug.log", level=logging.DEBUG)
 
@@ -12,12 +14,14 @@ display_height = 600
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
-RED = (200, 0, 0)
 GREEN = (0, 200, 0)
 BRIGHT_RED = (255, 0, 0)
 BRIGHT_GREEN = (0, 255, 0)
 GREY = (77, 79, 74)
 BROWN = (102, 74, 50)
+RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
+LIGHT_BLUE = (153, 204, 255)
 
 tankbase_h = 15
 tankbase_w = 60
@@ -63,7 +67,7 @@ class Bullet:
         self.x += self.speed_x
         self.y += self.speed_y
         if self.y > horizon:
-
+            Explosion(int(self.x), int(self.y))
             del Bullet.family[Bullet.family.index(self)]
 
     def show(self):
@@ -107,6 +111,7 @@ class Tank:
         end_y = self.centery + math.sin(math.radians(self.angle)) * self.length
         pygame.draw.line(gameDisplay, self.b_color, (self.centerx, self.centery), (end_x, end_y), 8)
 
+
 class Buttons:
     def __init__(self, x, y, w, h, ac_color, ic_color, text):
         self.x = x
@@ -144,19 +149,71 @@ class Buttons:
 
 
 class Explosion:
+    init_radius = 3
+    max_radius = 30
+    dot_limit = 150
+    dis_limit = 50
 
-    def __init__(x, y, radius, size):
+    family = []
+
+    def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.radius = radius
-        self.size = size
-        self.particle = 12
-        self.init_angle = 0
-        self.angle = int(360 / self.particle)
+        self.radius = Explosion.init_radius
+        self.dormant = False
+        self.dots = []
+        self.gene = 0
+        Explosion.family.append(self)
 
-    def show():
-        for each in range(1, self.particle + 1):
-            
+    def reproduce(self):
+        for each in range(10):
+            self.gene += 1
+            dot_x = random.randint(self.x - self.radius, self.x + self.radius)
+            dot_y = random.randint(self.y - self.radius, self.y + self.radius)
+            dot_radius = random.randint(3, 5)
+            self.dots.append({'color': (BLACK),
+                              'x': dot_x,
+                              'y': dot_y,
+                              'r': dot_radius})
+
+    def renew(self):
+        # generate a new dot
+        if (not self.dormant) and self.gene <= Explosion.dot_limit:
+            self.reproduce()
+        else:
+            self.dormant = True
+        # renew all other dots
+        for dot in self.dots:
+            dis = math.sqrt((dot['x'] - self.x)**2 + (dot['y'] - self.y)**2)
+            dot['x'] = self.x + (dot['x'] - self.x) * 1.1
+            dot['y'] = self.y + (dot['y'] - self.y) * 1.1
+            dot['r'] *= 0.5
+            if dot['r'] < 0.5 or dis > Explosion.dis_limit:
+                self.dots.remove(dot)
+            if dis <= 5:
+                dot['color'] = RED
+            elif dis <= 10:
+                dot['color'] = YELLOW
+            else:
+                rgb = int((dis - 5) / (Explosion.max_radius - 5) * 255)
+                if rgb < 0:
+                    rgb = 0
+                if rgb > 255:
+                    rgb = 255
+                dot['color'] = (rgb, rgb, rgb)
+        if not self.dots and self.dormant:
+            Explosion.family.remove(self)
+            del self
+
+
+    def show(self):
+        for dot in self.dots:
+            pygame.draw.circle(gameDisplay,
+                               dot['color'],
+                               (int(dot['x']), int(dot['y'])),
+                               int(dot['r']))
+        self.radius += 1
+
 def rtan(x, y):
     angle = math.degrees(math.atan(y / x))
     if x > 0:
@@ -204,7 +261,7 @@ def game_loop():
         if key_press[K_UP]:
             enemy_tank.angle -= 2
 
-        gameDisplay.fill(WHITE)
+        gameDisplay.fill(LIGHT_BLUE)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quitgame()
@@ -241,6 +298,11 @@ def game_loop():
 
         for bullet in Bullet.family:
             bullet.show()
+        for explosion in Explosion.family:
+            explosion.renew()
+            explosion.show()
+
+        print(clock.get_fps())
 
         pygame.display.update()
         clock.tick(30)
