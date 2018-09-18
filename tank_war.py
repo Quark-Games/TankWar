@@ -7,7 +7,7 @@ logging.basicConfig(filename="debug.log", level=logging.DEBUG)
 
 pygame.init()
 
-display_width = 1350
+display_width = 1000
 display_height = 600
 
 BLACK = (0, 0, 0)
@@ -37,6 +37,7 @@ gameDisplay = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption('TANK WAR')
 clock = pygame.time.Clock()
 
+
 class Bullet:
     init_img = pygame.image.load("bullet.png")
     gravity = 0.35
@@ -44,20 +45,12 @@ class Bullet:
     family = []
 
     def __init__(self, tank, power):
-        self.x = tank.centerx - 5
+        self.x = tank.centerx - 4
         self.y = tank.centery - 10
         self.angle = tank.angle
         self.speed_x = math.cos(math.radians(self.angle)) * power
         self.speed_y = math.sin(math.radians(self.angle)) * power
         Bullet.family.append(self)
-
-    # @property
-    # def x_graph(self):
-    #     return self.x
-    #
-    # @property
-    # def y_graph(self):
-    #     return display_height - self.y
 
     @property
     def img(self):
@@ -67,19 +60,20 @@ class Bullet:
         self.speed_x *= Bullet.air_resist
         self.speed_y += Bullet.gravity
         self.angle = rtan(self.speed_x, self.speed_y) % 360
-        print(self.speed_x, self.speed_y, self.angle)
         self.x += self.speed_x
         self.y += self.speed_y
-        if self.y > display_height:
+        if self.y > horizon:
+
             del Bullet.family[Bullet.family.index(self)]
 
     def show(self):
         gameDisplay.blit(self.img, (self.x, self.y))
 
+
 class Tank:
     barrel_length = 30
     init_angle = 270
-
+    family = []
     def __init__(self, x, y, b_color, w_color):
         self.x = x
         self.y = y
@@ -87,7 +81,7 @@ class Tank:
         self.w_color = w_color
         self.length = Tank.barrel_length
         self.angle = Tank.init_angle
-
+        Tank.family.append(self)
     @property
     def centerx(self):
         return self.x + int(tankbase_w / 2)
@@ -148,18 +142,27 @@ class Buttons:
         TitleRect.center = (self.x+(self.w/2), self.y+(self.h/2))
         gameDisplay.blit(TitleSurf, TitleRect)
 
-# def angle_convert(angle):
-#     angle = - angle
-#     return angle % 360
 
+class Explosion:
 
+    def __init__(x, y, radius, size):
+        self.x = x
+        self.y = y
+        self.radius = radius
+        self.size = size
+        self.particle = 12
+        self.init_angle = 0
+        self.angle = int(360 / self.particle)
+
+    def show():
+        for each in range(1, self.particle + 1):
+            
 def rtan(x, y):
     angle = math.degrees(math.atan(y / x))
     if x > 0:
         return angle
     else:
         return angle + 180
-
 
 def quitgame():
     pygame.quit()
@@ -168,7 +171,8 @@ def quitgame():
 def game_loop():
     global barrel_angle
 
-    tank_x = 400
+    tank_x = 300
+    enemy_x = 600
     x_change = 0
     ang_change = 0
 
@@ -176,7 +180,7 @@ def game_loop():
     barrel_limit = 60
 
     player_tank = Tank(tank_x, horizon, BLACK, BROWN)
-
+    enemy_tank = Tank(enemy_x, horizon, BLACK, BROWN)
     shoot = False
 
     while True:
@@ -186,10 +190,19 @@ def game_loop():
             player_tank.x -= 5
         if key_press[K_d]:
             player_tank.x += 5
+        if key_press[K_LEFT]:
+            enemy_tank.x -= 5
+        if key_press[K_RIGHT]:
+            enemy_tank.x += 5
+
         if key_press[K_e]:
             player_tank.angle += 2
         if key_press[K_q]:
             player_tank.angle -= 2
+        if key_press[K_DOWN]:
+            enemy_tank.angle += 2
+        if key_press[K_UP]:
+            enemy_tank.angle -= 2
 
         gameDisplay.fill(WHITE)
         for event in pygame.event.get():
@@ -198,29 +211,34 @@ def game_loop():
             if event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
                     quitgame()
-                if event.key == K_SPACE:
-                    Bullet(player_tank, 24)
-
+                if event.key == K_s:
+                    Bullet(player_tank, 20)
+                if event.key == K_RALT:
+                    Bullet(enemy_tank, 20)
 
         # logging.debug("bullet angle -> {}".format(bullet.angle))
         # logging.debug("bullet loc -> {},{}".format(bullet.x, bullet.y))
 
-        #barrel check
-        if player_tank.angle >= 270 + barrel_limit:
-            player_tank.angle = 270 + barrel_limit
-        if player_tank.angle <= 270 - barrel_limit:
-            player_tank.angle = 270 - barrel_limit
-
-        #wall check
-        if player_tank.x < 0:
-            player_tank.x = 0
-        if player_tank.x > display_width - tankbase_w:
-            player_tank.x = display_width - tankbase_w
-
+        for each in Tank.family:
+            #barrel check
+            if each.angle >= 270 + barrel_limit:
+                each.angle = 270 + barrel_limit
+            if each.angle <= 270 - barrel_limit:
+                each.angle = 270 - barrel_limit
+            #wall check
+            if each.x < 0:
+                each.x = 0
+            if each.x > display_width - tankbase_w:
+                each.x = display_width - tankbase_w
+        for bullet in Bullet.family:
+            if bullet.x > player_tank.x and bullet.x < player_tank.x + tankbase_w:
+                print("hit")
         for bullet in Bullet.family:
             bullet.renew()
 
         player_tank.show_tank()
+        enemy_tank.show_tank()
+
         for bullet in Bullet.family:
             bullet.show()
 
