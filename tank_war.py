@@ -150,7 +150,7 @@ class Buttons:
 
 class Explosion:
     init_radius = 3
-    max_radius = 30
+    max_radius = 50
     dot_limit = 150
     dis_limit = 50
 
@@ -214,6 +214,44 @@ class Explosion:
                                int(dot['r']))
         self.radius += 1
 
+
+class Spark:
+
+    init_length = 1
+    limit = 30
+    ang_range = 25
+    dense = 10
+    family = []
+
+    def __init__(self, tank, color):
+        self.x = tank.centerx
+        self.y = tank.centerx
+        self.color = color
+        self.limit = Spark.limit
+        self.angle = tank.angle
+        self.ang_range = Spark.ang_range
+        self.length = Spark.init_length
+        self.change = 1
+        self.dense = Spark.dense
+        Spark.family.append(self)
+
+    def show(self):
+        ang_l = self.angle - self.ang_range
+        ang_r = self.angle + self.ang_range
+        range = self.ang_range * 2
+        for each in (1, self.dense):
+            spark_ang = ang_l + (range / self.dense) * each
+            spark_x = int(self.y + math.sin(math.radians(360 - spark_ang)) * self.length)
+            spark_y = int(self.y + math.cos(math.radians(360 - spark_ang)) * self.length)
+            # if self.length <= self.limit:
+            pygame.draw.circle(gameDisplay, self.color, (spark_x, spark_y), 1)
+        self.length += self.change
+        self.change += 1
+
+    def renew(self):
+        self.length += 2
+
+
 def rtan(x, y):
     angle = math.degrees(math.atan(y / x))
     if x > 0:
@@ -270,8 +308,10 @@ def game_loop():
                     quitgame()
                 if event.key == K_s:
                     Bullet(player_tank, 20)
+                    Spark(player_tank, YELLOW)
                 if event.key == K_RALT:
                     Bullet(enemy_tank, 20)
+                    Spark(enemy_tank, YELLOW)
 
         # logging.debug("bullet angle -> {}".format(bullet.angle))
         # logging.debug("bullet loc -> {},{}".format(bullet.x, bullet.y))
@@ -287,6 +327,7 @@ def game_loop():
                 each.x = 0
             if each.x > display_width - tankbase_w:
                 each.x = display_width - tankbase_w
+
         for bullet in Bullet.family:
             if bullet.x > player_tank.x and bullet.x < player_tank.x + tankbase_w:
                 print("hit")
@@ -296,8 +337,13 @@ def game_loop():
         player_tank.show_tank()
         enemy_tank.show_tank()
 
+        for each in Spark.family:
+            each.renew()
+            each.show()
+
         for bullet in Bullet.family:
             bullet.show()
+
         for explosion in Explosion.family:
             explosion.renew()
             explosion.show()
