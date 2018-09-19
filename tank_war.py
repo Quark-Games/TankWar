@@ -3,7 +3,6 @@ from pygame.locals import *
 import logging
 import math
 import random
-import math
 
 logging.basicConfig(filename="debug.log", level=logging.DEBUG)
 
@@ -86,6 +85,8 @@ class Tank:
         self.length = Tank.barrel_length
         self.angle = Tank.init_angle
         Tank.family.append(self)
+        self.end_x = 0
+        self.end_y = 0
     @property
     def centerx(self):
         return self.x + int(tankbase_w / 2)
@@ -107,9 +108,9 @@ class Tank:
                               (self.x + (tank_wheel_d * each - tank_wheel_r),
                                self.y + tankbase_h * 2), tank_wheel_r)
         #barrel
-        end_x = self.centerx + math.cos(math.radians(self.angle)) * self.length
-        end_y = self.centery + math.sin(math.radians(self.angle)) * self.length
-        pygame.draw.line(gameDisplay, self.b_color, (self.centerx, self.centery), (end_x, end_y), 8)
+        self.end_x = self.centerx + math.cos(math.radians(self.angle)) * self.length
+        self.end_y = self.centery + math.sin(math.radians(self.angle)) * self.length
+        pygame.draw.line(gameDisplay, self.b_color, (self.centerx, self.centery), (self.end_x, self.end_y), 8)
 
 
 class Buttons:
@@ -224,8 +225,8 @@ class Spark:
     family = []
 
     def __init__(self, tank, color):
-        self.x = tank.centerx
-        self.y = tank.centerx
+        self.x = tank.end_x
+        self.y = tank.end_y
         self.color = color
         self.limit = Spark.limit
         self.angle = tank.angle
@@ -240,16 +241,19 @@ class Spark:
         ang_r = self.angle + self.ang_range
         range = self.ang_range * 2
         for each in (1, self.dense):
-            spark_ang = ang_l + (range / self.dense) * each
-            spark_x = int(self.y + math.sin(math.radians(360 - spark_ang)) * self.length)
-            spark_y = int(self.y + math.cos(math.radians(360 - spark_ang)) * self.length)
-            # if self.length <= self.limit:
-            pygame.draw.circle(gameDisplay, self.color, (spark_x, spark_y), 1)
+            spark_ang = ang_l + int(range / self.dense) * each
+            spark_x = int(self.y + math.sin(math.radians(90 - spark_ang)) * self.length)
+            spark_y = int(self.y + math.cos(math.radians(90 - spark_ang)) * self.length)
+            pygame.draw.circle(gameDisplay, self.color, (spark_x, spark_y), 2)
         self.length += self.change
         self.change += 1
 
     def renew(self):
         self.length += 2
+        # self.x = tank.end_x
+        # self.y = tank.end_y
+        if self.length >= self.limit:
+            del Spark.family[Spark.family.index(self)]
 
 
 def rtan(x, y):
@@ -328,9 +332,9 @@ def game_loop():
             if each.x > display_width - tankbase_w:
                 each.x = display_width - tankbase_w
 
-        for bullet in Bullet.family:
-            if bullet.x > player_tank.x and bullet.x < player_tank.x + tankbase_w:
-                print("hit")
+        # for bullet in Bullet.family:
+        #     if bullet.x > player_tank.x and bullet.x < player_tank.x + tankbase_w:
+        #         print("hit")
         for bullet in Bullet.family:
             bullet.renew()
 
@@ -348,8 +352,8 @@ def game_loop():
             explosion.renew()
             explosion.show()
 
-        print(clock.get_fps())
-
+        # print(clock.get_fps())
+        print(Spark.family)
         pygame.display.update()
         clock.tick(30)
 
