@@ -85,8 +85,7 @@ class Tank:
         self.length = Tank.barrel_length
         self.angle = Tank.init_angle
         Tank.family.append(self)
-        self.end_x = 0
-        self.end_y = 0
+
     @property
     def centerx(self):
         return self.x + int(tankbase_w / 2)
@@ -94,6 +93,14 @@ class Tank:
     @property
     def centery(self):
         return self.y + tankbase_h
+
+    @property
+    def end_x(self):
+        return self.centerx + math.cos(math.radians(self.angle)) * self.length
+
+    @property
+    def end_y(self):
+        return self.centery + math.sin(math.radians(self.angle)) * self.length
 
     def show_tank(self):
         #top
@@ -108,9 +115,11 @@ class Tank:
                               (self.x + (tank_wheel_d * each - tank_wheel_r),
                                self.y + tankbase_h * 2), tank_wheel_r)
         #barrel
-        self.end_x = self.centerx + math.cos(math.radians(self.angle)) * self.length
-        self.end_y = self.centery + math.sin(math.radians(self.angle)) * self.length
-        pygame.draw.line(gameDisplay, self.b_color, (self.centerx, self.centery), (self.end_x, self.end_y), 8)
+        pygame.draw.line(gameDisplay,
+                         self.b_color,
+                         (self.centerx, self.centery),
+                         (self.end_x, self.end_y),
+                         8)
 
 
 class Buttons:
@@ -220,39 +229,40 @@ class Spark:
 
     init_length = 1
     limit = 30
-    ang_range = 25
-    dense = 10
+    ang_range = 30
+    dense = 2
+
     family = []
 
     def __init__(self, tank, color):
-        self.x = tank.end_x
-        self.y = tank.end_y
+        self.tank = tank
         self.color = color
-        self.limit = Spark.limit
         self.angle = tank.angle
-        self.ang_range = Spark.ang_range
         self.length = Spark.init_length
         self.change = 1
-        self.dense = Spark.dense
         Spark.family.append(self)
 
+    @property
+    def x(self):
+        return self.tank.end_x
+
+    @property
+    def y(self):
+        return self.tank.end_y
+
     def show(self):
-        ang_l = self.angle - self.ang_range
-        ang_r = self.angle + self.ang_range
-        range = self.ang_range * 2
-        for each in (1, self.dense):
-            spark_ang = ang_l + int(range / self.dense) * each
-            spark_x = int(self.y + math.sin(math.radians(90 - spark_ang)) * self.length)
-            spark_y = int(self.y + math.cos(math.radians(90 - spark_ang)) * self.length)
-            pygame.draw.circle(gameDisplay, self.color, (spark_x, spark_y), 2)
+        for ang in range(self.angle - Spark.ang_range,
+                         self.angle + Spark.ang_range + 1,
+                         int(Spark.ang_range / self.dense)):
+            x = int(self.x + math.sin(math.radians(90 - ang)) * self.length)
+            y = int(self.y + math.cos(math.radians(90 - ang)) * self.length)
+            pygame.draw.circle(gameDisplay, self.color, (x, y), 2)
         self.length += self.change
         self.change += 1
 
     def renew(self):
         self.length += 2
-        # self.x = tank.end_x
-        # self.y = tank.end_y
-        if self.length >= self.limit:
+        if self.length >= Spark.limit:
             del Spark.family[Spark.family.index(self)]
 
 
@@ -285,6 +295,8 @@ def game_loop():
     while True:
         key_press = pygame.key.get_pressed()
 
+        gameDisplay.fill(LIGHT_BLUE)
+
         if key_press[K_a]:
             player_tank.x -= 5
         if key_press[K_d]:
@@ -303,7 +315,6 @@ def game_loop():
         if key_press[K_UP]:
             enemy_tank.angle -= 2
 
-        gameDisplay.fill(LIGHT_BLUE)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quitgame()
@@ -332,21 +343,23 @@ def game_loop():
             if each.x > display_width - tankbase_w:
                 each.x = display_width - tankbase_w
 
-        # for bullet in Bullet.family:
-        #     if bullet.x > player_tank.x and bullet.x < player_tank.x + tankbase_w:
-        #         print("hit")
+
+        pygame.draw.rect(gameDisplay,
+                         GREEN,
+                         (0, horizon, display_width, display_height - horizon))
+
         for bullet in Bullet.family:
             bullet.renew()
 
         player_tank.show_tank()
         enemy_tank.show_tank()
 
+        for bullet in Bullet.family:
+            bullet.show()
+
         for each in Spark.family:
             each.renew()
             each.show()
-
-        for bullet in Bullet.family:
-            bullet.show()
 
         for explosion in Explosion.family:
             explosion.renew()
