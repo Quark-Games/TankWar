@@ -269,25 +269,16 @@ class Spark:
 
 class Obstacle:
 
-    # obs_height = int(display_height / 3)
-    # obs_width = int(display_width / 4)
-    # obs_y = int(display_height / 3) * 2
-    # obs_x = int(display_width / 2) - int(obs_width / 2) - obs_width
-    # obs_num = 3
-    # family = []
-    # coor = [[], [], []]
-
-    obs_height = 400
-    obs_width = 50
-    obs_y = 400
-    obs_x = 400
     obs_num = 3
-    family = []
+    obs_height = 200
+    obs_width = 30
+    obs_y = 400
+    obs_x = int(display_width / 2 - (obs_width * obs_num / 2))
     coor = [[], [], []]
 
     def __init__(self):
-        Obstacle.family.append(self)
-
+        # Obstacle.family.append(self)
+        pass
 
     def show(self):
         for each in Obstacle.coor:
@@ -295,10 +286,6 @@ class Obstacle:
 
     def set(self):
         for each in range(1, Obstacle.obs_num + 1):
-
-
-
-
             y = random.randint(10, Obstacle.obs_height)
             x = Obstacle.obs_x + (Obstacle.obs_width * each)
             Obstacle.coor[each - 1].append(x)
@@ -308,19 +295,20 @@ class Obstacle:
 class Power_msg:
 
     font = pygame.font.SysFont("comicsansms",30)
+    msg = "Power: "
 
-    def __init__(self, text):
+    def __init__(self, text, x):
         self.text = text
+        self.x = x
 
     @property
     def text_objects(self):
-        return Power_msg.font.render(self.text, True, BLACK), Power_msg.font.render(self.text, True, BLACK).get_rect()
+        return Power_msg.font.render(Power_msg.msg + self.text, True, BLACK), Power_msg.font.render(self.text, True, BLACK).get_rect()
 
     def show(self):
         textSurf, textRect = self.text_objects
-        textRect.center = (60, 20)
+        textRect.center = (self.x, 20)
         gameDisplay.blit(textSurf, textRect)
-
 
 
 def rtan(x, y):
@@ -345,13 +333,19 @@ def game_loop():
     barrel_speed = 4
     barrel_limit = 60
 
+    player_power = 20
+    enemy_power = 20
+
+    #create objects
     player_tank = Tank(tank_x + 20, horizon, BLACK, BROWN)
     enemy_tank = Tank(enemy_x + 20, horizon, BLACK, BROWN)
     terrian_obs = Obstacle()
-    text = Power_msg("Power: 18")
+    left_text = Power_msg(str(player_power), 20)
+    right_text = Power_msg(str(enemy_power), 905)
+
     terrian_obs.set()
-    player_power = 20
-    enemy_power = 20
+
+
 
     while True:
         key_press = pygame.key.get_pressed()
@@ -380,16 +374,16 @@ def game_loop():
 
         #power change
         if key_press[K_w]:
-            if player_power <= 20:
+            if player_power < 22:
                 player_power += 1
         if key_press[K_s]:
-            if player_power >= 10:
+            if player_power > 10:
                 player_power -= 1
         if key_press[K_p]:
-            if enemy_power <= 20:
+            if enemy_power < 22:
                 enemy_power += 1
-        if key_press[K_COLON]:
-            if enemy_power >= 10:
+        if key_press[K_SEMICOLON]:
+            if enemy_power > 10:
                 enemy_power -= 1
 
         for event in pygame.event.get():
@@ -405,9 +399,6 @@ def game_loop():
                     Bullet(enemy_tank, enemy_power)
                     Spark(enemy_tank, YELLOW)
 
-        # logging.debug("bullet angle -> {}".format(bullet.angle))
-        # logging.debug("bullet loc -> {},{}".format(bullet.x, bullet.y))
-
         for each in Tank.family:
             #barrel check
             if each.angle >= 270 + barrel_limit:
@@ -421,7 +412,10 @@ def game_loop():
                 each.x = display_width - tankbase_w
 
         #show Power
-        text.show()
+        left_text.text = str(player_power - 9)
+        left_text.show()
+        right_text.text = str(enemy_power - 9)
+        right_text.show()
         #land
         pygame.draw.rect(gameDisplay,
                          GREEN,
@@ -446,8 +440,6 @@ def game_loop():
         for explosion in Explosion.family:
             explosion.renew()
             explosion.show()
-
-        # print(clock.get_fps())
 
         pygame.display.update()
         clock.tick(30)
