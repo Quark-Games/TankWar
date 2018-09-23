@@ -303,7 +303,9 @@ class Power_msg:
 
     @property
     def text_objects(self):
-        return Power_msg.font.render(Power_msg.msg + self.text, True, BLACK), Power_msg.font.render(self.text, True, BLACK).get_rect()
+        bit_map = Power_msg.font.render(Power_msg.msg + self.text, True, BLACK)
+        rect = bit_map.get_rect()
+        return bit_map, rect
 
     def show(self):
         textSurf, textRect = self.text_objects
