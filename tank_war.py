@@ -21,6 +21,7 @@ BROWN = (102, 74, 50)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 LIGHT_BLUE = (153, 204, 255)
+LIGHT_BROWN = (74, 52, 38)
 
 tankbase_h = 15
 tankbase_w = 60
@@ -228,8 +229,8 @@ class Explosion:
 class Spark:
 
     init_length = 1
-    limit = 30
-    ang_range = 30
+    limit = 20
+    ang_range = 25
     dense = 2
 
     family = []
@@ -266,6 +267,62 @@ class Spark:
             del Spark.family[Spark.family.index(self)]
 
 
+class Obstacle:
+
+    # obs_height = int(display_height / 3)
+    # obs_width = int(display_width / 4)
+    # obs_y = int(display_height / 3) * 2
+    # obs_x = int(display_width / 2) - int(obs_width / 2) - obs_width
+    # obs_num = 3
+    # family = []
+    # coor = [[], [], []]
+
+    obs_height = 400
+    obs_width = 50
+    obs_y = 400
+    obs_x = 400
+    obs_num = 3
+    family = []
+    coor = [[], [], []]
+
+    def __init__(self):
+        Obstacle.family.append(self)
+
+
+    def show(self):
+        for each in Obstacle.coor:
+            pygame.draw.rect(gameDisplay, LIGHT_BROWN, (each[0], each[1], Obstacle.obs_width, display_height - each[1]))
+
+    def set(self):
+        for each in range(1, Obstacle.obs_num + 1):
+
+
+
+
+            y = random.randint(10, Obstacle.obs_height)
+            x = Obstacle.obs_x + (Obstacle.obs_width * each)
+            Obstacle.coor[each - 1].append(x)
+            Obstacle.coor[each - 1].append(y)
+
+
+class Power_msg:
+
+    font = pygame.font.SysFont("comicsansms",30)
+
+    def __init__(self, text):
+        self.text = text
+
+    @property
+    def text_objects(self):
+        return Power_msg.font.render(self.text, True, BLACK), Power_msg.font.render(self.text, True, BLACK).get_rect()
+
+    def show(self):
+        textSurf, textRect = self.text_objects
+        textRect.center = (60, 20)
+        gameDisplay.blit(textSurf, textRect)
+
+
+
 def rtan(x, y):
     angle = math.degrees(math.atan(y / x))
     if x > 0:
@@ -288,32 +345,52 @@ def game_loop():
     barrel_speed = 4
     barrel_limit = 60
 
-    player_tank = Tank(tank_x, horizon, BLACK, BROWN)
-    enemy_tank = Tank(enemy_x, horizon, BLACK, BROWN)
-    shoot = False
+    player_tank = Tank(tank_x + 20, horizon, BLACK, BROWN)
+    enemy_tank = Tank(enemy_x + 20, horizon, BLACK, BROWN)
+    terrian_obs = Obstacle()
+    text = Power_msg("Power: 18")
+    terrian_obs.set()
+    player_power = 20
+    enemy_power = 20
 
     while True:
         key_press = pygame.key.get_pressed()
 
         gameDisplay.fill(LIGHT_BLUE)
 
+        #tank movement
         if key_press[K_a]:
             player_tank.x -= 5
         if key_press[K_d]:
             player_tank.x += 5
-        if key_press[K_LEFT]:
+        if key_press[K_l]:
             enemy_tank.x -= 5
-        if key_press[K_RIGHT]:
+        if key_press[39]:
             enemy_tank.x += 5
 
+        #barrel movement
         if key_press[K_e]:
             player_tank.angle += 2
         if key_press[K_q]:
             player_tank.angle -= 2
-        if key_press[K_DOWN]:
+        if key_press[K_LEFTBRACKET]:
             enemy_tank.angle += 2
-        if key_press[K_UP]:
+        if key_press[K_o]:
             enemy_tank.angle -= 2
+
+        #power change
+        if key_press[K_w]:
+            if player_power <= 20:
+                player_power += 1
+        if key_press[K_s]:
+            if player_power >= 10:
+                player_power -= 1
+        if key_press[K_p]:
+            if enemy_power <= 20:
+                enemy_power += 1
+        if key_press[K_COLON]:
+            if enemy_power >= 10:
+                enemy_power -= 1
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -321,11 +398,11 @@ def game_loop():
             if event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
                     quitgame()
-                if event.key == K_s:
-                    Bullet(player_tank, 20)
+                if event.key == K_f:
+                    Bullet(player_tank, player_power)
                     Spark(player_tank, YELLOW)
-                if event.key == K_RALT:
-                    Bullet(enemy_tank, 20)
+                if event.key == K_RETURN:
+                    Bullet(enemy_tank, enemy_power)
                     Spark(enemy_tank, YELLOW)
 
         # logging.debug("bullet angle -> {}".format(bullet.angle))
@@ -343,30 +420,35 @@ def game_loop():
             if each.x > display_width - tankbase_w:
                 each.x = display_width - tankbase_w
 
-
+        #show Power
+        text.show()
+        #land
         pygame.draw.rect(gameDisplay,
                          GREEN,
                          (0, horizon, display_width, display_height - horizon))
-
+        #obstacles
+        terrian_obs.show()
+        #bullet renew
         for bullet in Bullet.family:
             bullet.renew()
-
-        player_tank.show_tank()
-        enemy_tank.show_tank()
-
+        #show all tank
+        for each in Tank.family:
+            each.show_tank()
+            each.show_tank()
+        #show all Bullet
         for bullet in Bullet.family:
             bullet.show()
-
+        #show spark
         for each in Spark.family:
             each.renew()
             each.show()
-
+        #show explosion
         for explosion in Explosion.family:
             explosion.renew()
             explosion.show()
 
         # print(clock.get_fps())
-        print(Spark.family)
+
         pygame.display.update()
         clock.tick(30)
 
