@@ -23,18 +23,6 @@ YELLOW = (255, 255, 0)
 LIGHT_BLUE = (153, 204, 255)
 LIGHT_BROWN = (74, 52, 38)
 
-tankbase_h = 15
-tankbase_w = 60
-top_r = tankbase_h
-tank_wheel_r = int(tankbase_h / 2)
-tank_wheel_d = tankbase_h
-
-tank_w = tankbase_w
-tank_h = tankbase_h * 2 + tank_wheel_r
-
-barrel_angle = 270
-barrel_length = 2 * tankbase_h
-
 horizon = display_height - 100
 
 gameDisplay = pygame.display.set_mode((display_width, display_height))
@@ -75,9 +63,17 @@ class Bullet:
 
 
 class Tank:
+
+    tankbase_h = 15
+    tankbase_w = 60
+    top_r = tankbase_h
+    tank_wheel_r = int(tankbase_h / 2)
+    tank_wheel_d = tankbase_h
+
     barrel_length = 30
     init_angle = 270
     family = []
+
     def __init__(self, x, y, b_color, w_color):
         self.x = x
         self.y = y
@@ -89,11 +85,11 @@ class Tank:
 
     @property
     def centerx(self):
-        return self.x + int(tankbase_w / 2)
+        return self.x + int(Tank.tankbase_w / 2)
 
     @property
     def centery(self):
-        return self.y + tankbase_h
+        return self.y - Tank.tankbase_h - Tank.tank_wheel_r
 
     @property
     def end_x(self):
@@ -106,57 +102,22 @@ class Tank:
     def show_tank(self):
         #top
         pygame.draw.circle(gameDisplay, self.b_color,
-                          (self.x + 2 * top_r, self.y + top_r), top_r)
+                          (self.centerx, self.centery), Tank.top_r)
         #base
         pygame.draw.rect(gameDisplay, self.b_color,
-                        (self.x, self.y + tankbase_h, tankbase_w, tankbase_h))
+                        (self.x, self.y - Tank.tankbase_h - Tank.tank_wheel_r,
+                         Tank.tankbase_w, Tank.tankbase_h))
         #wheel
         for each in range(1, 5):
             pygame.draw.circle(gameDisplay, self.w_color,
-                              (self.x + (tank_wheel_d * each - tank_wheel_r),
-                               self.y + tankbase_h * 2), tank_wheel_r)
+                              (self.x + (Tank.tank_wheel_d * each - Tank.tank_wheel_r),
+                               self.y - Tank.tank_wheel_r), Tank.tank_wheel_r)
         #barrel
         pygame.draw.line(gameDisplay,
                          self.b_color,
                          (self.centerx, self.centery),
                          (self.end_x, self.end_y),
                          8)
-
-
-class Buttons:
-    def __init__(self, x, y, w, h, ac_color, ic_color, text):
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
-        self.ac_color = ac_color
-        self.ic_color = ic_color
-        self.text = text
-        self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
-
-    def show_ac(self):
-        pygame.draw.rect(gameDisplay, self.ac_color, self.rect)
-
-    def show_ic(self):
-        pygame.draw.rect(gameDisplay, self.ic_color, self.rect)
-
-    def collide(self):
-        mouse = pygame.mouse.get_pos()
-        if self.rect.collidepoint(mouse):
-            return True
-        else:
-            return False
-
-    def click(self):
-        click = pygame.mouse.get_pressed()
-        if click[0] == 1:
-            return True
-
-    def write(self):
-        smallText = pygame.font.SysFont("comicsansms", 45)
-        TitleSurf, TitleRect = text_objects(self.text,smallText)
-        TitleRect.center = (self.x+(self.w/2), self.y+(self.h/2))
-        gameDisplay.blit(TitleSurf, TitleRect)
 
 
 class Explosion:
@@ -267,31 +228,6 @@ class Spark:
             del Spark.family[Spark.family.index(self)]
 
 
-class Obstacle:
-
-    obs_num = 3
-    obs_height = 200
-    obs_width = 30
-    obs_y = 400
-    obs_x = int(display_width / 2 - (obs_width * obs_num / 2))
-    coor = [[], [], []]
-
-    def __init__(self):
-        # Obstacle.family.append(self)
-        pass
-
-    def show(self):
-        for each in Obstacle.coor:
-            pygame.draw.rect(gameDisplay, LIGHT_BROWN, (each[0], each[1], Obstacle.obs_width, display_height - each[1]))
-
-    def set(self):
-        for each in range(1, Obstacle.obs_num + 1):
-            y = random.randint(10, Obstacle.obs_height)
-            x = Obstacle.obs_x + (Obstacle.obs_width * each)
-            Obstacle.coor[each - 1].append(x)
-            Obstacle.coor[each - 1].append(y)
-
-
 class Power_msg:
 
     font = pygame.font.SysFont("comicsansms",30)
@@ -311,6 +247,84 @@ class Power_msg:
         textSurf, textRect = self.text_objects
         textRect.center = (self.x, 20)
         gameDisplay.blit(textSurf, textRect)
+
+
+class Obstacle:
+
+    obs_num = 3
+    obs_height = 300
+    obs_width = 30
+    obs_x = int(display_width / 2 - (obs_width * obs_num / 2))
+    coor = [[], [], []]
+
+    def __init__(self):
+        pass
+
+    def show(self):
+        for each in Obstacle.coor:
+            pygame.draw.rect(gameDisplay, LIGHT_BROWN, (each[0], each[1], Obstacle.obs_width, each[2]))
+
+    def set(self):
+        for each in range(1, Obstacle.obs_num + 1):
+            h = random.randint(100, Obstacle.obs_height)
+            y = horizon - h
+            x = Obstacle.obs_x + (Obstacle.obs_width * each)
+            Obstacle.coor[each - 1].append(x)
+            Obstacle.coor[each - 1].append(y)
+            Obstacle.coor[each - 1].append(h)
+
+
+# class Bar:
+#
+#     width = 100
+#     height = 20
+#
+#     def __init__(self. x, y, color, points, current_p):
+#         self.x = x
+#         self.y = y
+#         self.color = color
+#         self.points = points
+#         self.current_p = current_p
+#         pass
+#
+#     def show(self):
+#         pass
+
+
+class Buttons:
+    def __init__(self, x, y, w, h, ac_color, ic_color, text):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.ac_color = ac_color
+        self.ic_color = ic_color
+        self.text = text
+        self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
+
+    def show_ac(self):
+        pygame.draw.rect(gameDisplay, self.ac_color, self.rect)
+
+    def show_ic(self):
+        pygame.draw.rect(gameDisplay, self.ic_color, self.rect)
+
+    def collide(self):
+        mouse = pygame.mouse.get_pos()
+        if self.rect.collidepoint(mouse):
+            return True
+        else:
+            return False
+
+    def click(self):
+        click = pygame.mouse.get_pressed()
+        if click[0] == 1:
+            return True
+
+    def write(self):
+        smallText = pygame.font.SysFont("comicsansms", 45)
+        TitleSurf, TitleRect = text_objects(self.text,smallText)
+        TitleRect.center = (self.x+(self.w/2), self.y+(self.h/2))
+        gameDisplay.blit(TitleSurf, TitleRect)
 
 
 def rtan(x, y):
@@ -339,11 +353,11 @@ def game_loop():
     enemy_power = 20
 
     #create objects
-    player_tank = Tank(tank_x + 20, horizon, BLACK, BROWN)
-    enemy_tank = Tank(enemy_x + 20, horizon, BLACK, BROWN)
+    player_tank = Tank(tank_x, horizon, BLACK, BROWN)
+    enemy_tank = Tank(enemy_x, horizon, BLACK, BROWN)
     terrian_obs = Obstacle()
-    left_text = Power_msg(str(player_power), 20)
-    right_text = Power_msg(str(enemy_power), 905)
+    left_text = Power_msg(str(player_power), 60)
+    right_text = Power_msg(str(enemy_power), 930)
 
     terrian_obs.set()
 
@@ -410,8 +424,8 @@ def game_loop():
             #wall check
             if each.x < 0:
                 each.x = 0
-            if each.x > display_width - tankbase_w:
-                each.x = display_width - tankbase_w
+            if each.x > display_width - each.tankbase_w:
+                each.x = display_width - each.tankbase_w
 
         #show Power
         left_text.text = str(player_power - 9)
