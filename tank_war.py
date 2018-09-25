@@ -29,7 +29,6 @@ gameDisplay = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption('TANK WAR')
 clock = pygame.time.Clock()
 
-
 class Bullet:
     init_img = pygame.image.load("bullet.png")
     gravity = 0.35
@@ -274,21 +273,27 @@ class Obstacle:
             Obstacle.coor[each - 1].append(h)
 
 
-# class Bar:
-#
-#     width = 100
-#     height = 20
-#
-#     def __init__(self. x, y, color, points, current_p):
-#         self.x = x
-#         self.y = y
-#         self.color = color
-#         self.points = points
-#         self.current_p = current_p
-#         pass
-#
-#     def show(self):
-#         pass
+class Bar:
+
+    width = 140
+    height = 20
+    thickness = 2
+
+    def __init__(self, x, y, color, points, current_p):
+        self.x = x
+        self.y = y
+        self.color = color
+        self.points = points
+        self.current_p = current_p
+
+    def show(self):
+        slice = int(Bar.width / self.points)
+        #inside rect
+        pygame.draw.rect(gameDisplay, self.color,
+                        (self.x, self.y, self.current_p * slice, Bar.height))
+        #outside rect
+        pygame.draw.rect(gameDisplay, BLACK,
+                        (self.x, self.y, Bar.width - slice, Bar.height), Bar.thickness)
 
 
 class Buttons:
@@ -358,6 +363,8 @@ def game_loop():
     terrian_obs = Obstacle()
     left_text = Power_msg(str(player_power), 60)
     right_text = Power_msg(str(enemy_power), 930)
+    left_bar = Bar(10, 30, YELLOW, 13, player_power - 9)
+    right_bar = Bar(850, 30, YELLOW, 13, enemy_power - 9)
 
     terrian_obs.set()
 
@@ -432,6 +439,14 @@ def game_loop():
         left_text.show()
         right_text.text = str(enemy_power - 9)
         right_text.show()
+
+        #show progress bar
+        left_bar.current_p = player_power - 9
+        left_bar.show()
+        right_bar.current_p = enemy_power - 9
+        right_bar.show()
+
+
         #land
         pygame.draw.rect(gameDisplay,
                          GREEN,
