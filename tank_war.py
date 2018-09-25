@@ -29,6 +29,7 @@ gameDisplay = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption('TANK WAR')
 clock = pygame.time.Clock()
 
+
 class Bullet:
     init_img = pygame.image.load("bullet.png")
     gravity = 0.35
@@ -53,9 +54,15 @@ class Bullet:
         self.angle = rtan(self.speed_x, self.speed_y) % 360
         self.x += self.speed_x
         self.y += self.speed_y
+        # hit ground
         if self.y > horizon:
             Explosion(int(self.x), int(self.y))
             del Bullet.family[Bullet.family.index(self)]
+        # hit obstacles
+        for rect in Obstacle.rects:
+            if rect.collidepoint((self.x, self.y)):
+                Explosion(int(self.x), int(self.y))
+                del Bullet.family[Bullet.family.index(self)]
 
     def show(self):
         gameDisplay.blit(self.img, (self.x, self.y))
@@ -227,6 +234,29 @@ class Spark:
             del Spark.family[Spark.family.index(self)]
 
 
+class Obstacle:
+
+    num = 3
+    height = 300
+    width = 30
+    x = int(display_width / 2 - ((width * num) / 2))
+    rects = []
+
+    @classmethod
+    def show(cls):
+        for rect in Obstacle.rects:
+            pygame.draw.rect(gameDisplay, LIGHT_BROWN, rect)
+
+    @classmethod
+    def set(cls):
+        for i in range(Obstacle.num):
+            h = random.randint(100, cls.height)
+            y = horizon - h
+            x = Obstacle.x + (Obstacle.width * i)
+            rect = pygame.Rect(x, y, Obstacle.width, h)
+            Obstacle.rects.append(rect)
+
+
 class Power_msg:
 
     font = pygame.font.SysFont("comicsansms",30)
@@ -246,31 +276,6 @@ class Power_msg:
         textSurf, textRect = self.text_objects
         textRect.center = (self.x, 20)
         gameDisplay.blit(textSurf, textRect)
-
-
-class Obstacle:
-
-    obs_num = 3
-    obs_height = 300
-    obs_width = 30
-    obs_x = int(display_width / 2 - (obs_width * obs_num / 2))
-    coor = [[], [], []]
-
-    def __init__(self):
-        pass
-
-    def show(self):
-        for each in Obstacle.coor:
-            pygame.draw.rect(gameDisplay, LIGHT_BROWN, (each[0], each[1], Obstacle.obs_width, each[2]))
-
-    def set(self):
-        for each in range(1, Obstacle.obs_num + 1):
-            h = random.randint(100, Obstacle.obs_height)
-            y = horizon - h
-            x = Obstacle.obs_x + (Obstacle.obs_width * each)
-            Obstacle.coor[each - 1].append(x)
-            Obstacle.coor[each - 1].append(y)
-            Obstacle.coor[each - 1].append(h)
 
 
 class Bar:
@@ -360,15 +365,12 @@ def game_loop():
     #create objects
     player_tank = Tank(tank_x, horizon, BLACK, BROWN)
     enemy_tank = Tank(enemy_x, horizon, BLACK, BROWN)
-    terrian_obs = Obstacle()
     left_text = Power_msg(str(player_power), 60)
     right_text = Power_msg(str(enemy_power), 930)
     left_bar = Bar(10, 30, YELLOW, 13, player_power - 9)
     right_bar = Bar(850, 30, YELLOW, 13, enemy_power - 9)
 
-    terrian_obs.set()
-
-
+    Obstacle.set()
 
     while True:
         key_press = pygame.key.get_pressed()
@@ -434,25 +436,28 @@ def game_loop():
             if each.x > display_width - each.tankbase_w:
                 each.x = display_width - each.tankbase_w
 
+        #obstacle check
+        if player_tank.x + player_tank.tankbase_w >= Obstacle.x:
+            player_tank.x = Obstacle.x - player_tank.tankbase_w
+        if enemy_tank.x <= Obstacle.x + Obstacle.width * 3:
+            enemy_tank.x = Obstacle.x + Obstacle.width * 3
+
         #show Power
         left_text.text = str(player_power - 9)
         left_text.show()
         right_text.text = str(enemy_power - 9)
         right_text.show()
-
         #show progress bar
         left_bar.current_p = player_power - 9
         left_bar.show()
         right_bar.current_p = enemy_power - 9
         right_bar.show()
-
-
         #land
         pygame.draw.rect(gameDisplay,
                          GREEN,
                          (0, horizon, display_width, display_height - horizon))
         #obstacles
-        terrian_obs.show()
+        Obstacle.show()
         #bullet renew
         for bullet in Bullet.family:
             bullet.renew()
@@ -475,4 +480,7 @@ def game_loop():
         pygame.display.update()
         clock.tick(30)
 
-game_loop()
+try:
+    game_loop()
+except KeyboardInterrupt:
+    quitgame()
