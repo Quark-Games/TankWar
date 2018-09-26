@@ -414,7 +414,7 @@ def game_loop():
                 if event.key == K_f:
                     Bullet(player_tank, player_power)
                     Spark(player_tank, YELLOW)
-                if event.key == K_k:
+                if event.key == K_RETURN:
                     Bullet(enemy_tank, enemy_power)
                     Spark(enemy_tank, YELLOW)
 
@@ -429,6 +429,9 @@ def game_loop():
                 each.x = 0
             if each.x > display_width - each.tankbase_w:
                 each.x = display_width - each.tankbase_w
+            #check Health
+            if each.health <= 0:
+                quitgame()
 
         #obstacle check
         if player_tank.x + player_tank.tankbase_w >= Obstacle.x:
@@ -442,7 +445,6 @@ def game_loop():
         right_bar.current_p = enemy_power - 9
         left_bar.show()
         right_bar.show()
-        #show health bar
         l_healbar.current_p = player_tank.health
         r_healbar.current_p = enemy_tank.health
         l_healbar.show()
