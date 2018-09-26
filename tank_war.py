@@ -57,6 +57,9 @@ class Bullet:
         # hit ground
         if self.y > horizon:
             Explosion(int(self.x), int(self.y))
+            for each in Tank.family:
+                if self.x > each.x and self.x < each.x + each.tankbase_w:
+                    each.health -= 1
             del Bullet.family[Bullet.family.index(self)]
         # hit obstacles
         for rect in Obstacle.rects:
@@ -70,6 +73,7 @@ class Bullet:
 
 class Tank:
 
+    init_health = 5
     tankbase_h = 15
     tankbase_w = 60
     top_r = tankbase_h
@@ -88,6 +92,7 @@ class Tank:
         self.length = Tank.barrel_length
         self.angle = Tank.init_angle
         Tank.family.append(self)
+        self.health = Tank.init_health
 
     @property
     def centerx(self):
@@ -257,48 +262,37 @@ class Obstacle:
             Obstacle.rects.append(rect)
 
 
-class Power_msg:
-
-    font = pygame.font.SysFont("comicsansms",30)
-    msg = "Power: "
-
-    def __init__(self, text, x):
-        self.text = text
-        self.x = x
-
-    @property
-    def text_objects(self):
-        bit_map = Power_msg.font.render(Power_msg.msg + self.text, True, BLACK)
-        rect = bit_map.get_rect()
-        return bit_map, rect
-
-    def show(self):
-        textSurf, textRect = self.text_objects
-        textRect.center = (self.x, 20)
-        gameDisplay.blit(textSurf, textRect)
-
-
 class Bar:
 
     width = 140
     height = 20
-    thickness = 2
+    thickness = 3
+    font = pygame.font.SysFont("comicsansms",30)
 
-    def __init__(self, x, y, color, points, current_p):
+    def __init__(self, x, y, color, points, current_p, msg):
         self.x = x
         self.y = y
         self.color = color
         self.points = points
         self.current_p = current_p
+        self.msg = msg
+
+    @property
+    def text_objects(self):
+        bit_map = Bar.font.render(self.msg + str(self.current_p), True, BLACK)
+        return bit_map
 
     def show(self):
+        textSurf = self.text_objects
         slice = int(Bar.width / self.points)
         #inside rect
         pygame.draw.rect(gameDisplay, self.color,
                         (self.x, self.y, self.current_p * slice, Bar.height))
         #outside rect
         pygame.draw.rect(gameDisplay, BLACK,
-                        (self.x, self.y, Bar.width - slice, Bar.height), Bar.thickness)
+                        (self.x, self.y, Bar.width - slice, Bar.height),
+                         Bar.thickness)
+        gameDisplay.blit(textSurf, (self.x, self.y - 20))
 
 
 class Buttons:
@@ -365,10 +359,10 @@ def game_loop():
     #create objects
     player_tank = Tank(tank_x, horizon, BLACK, BROWN)
     enemy_tank = Tank(enemy_x, horizon, BLACK, BROWN)
-    left_text = Power_msg(str(player_power), 60)
-    right_text = Power_msg(str(enemy_power), 930)
-    left_bar = Bar(10, 30, YELLOW, 13, player_power - 9)
-    right_bar = Bar(850, 30, YELLOW, 13, enemy_power - 9)
+    left_bar = Bar(10, 30, YELLOW, 13, player_power - 9, "Power: ")
+    right_bar = Bar(860, 30, YELLOW, 13, enemy_power - 9, "Power: ")
+    l_healbar = Bar(10, 80, RED, 6, 5, "Health: ")
+    r_healbar = Bar(860, 80, RED, 6, 5, "Health: ")
 
     Obstacle.set()
 
@@ -420,7 +414,7 @@ def game_loop():
                 if event.key == K_f:
                     Bullet(player_tank, player_power)
                     Spark(player_tank, YELLOW)
-                if event.key == K_RETURN:
+                if event.key == K_k:
                     Bullet(enemy_tank, enemy_power)
                     Spark(enemy_tank, YELLOW)
 
@@ -442,16 +436,17 @@ def game_loop():
         if enemy_tank.x <= Obstacle.x + Obstacle.width * 3:
             enemy_tank.x = Obstacle.x + Obstacle.width * 3
 
-        #show Power
-        left_text.text = str(player_power - 9)
-        left_text.show()
-        right_text.text = str(enemy_power - 9)
-        right_text.show()
+
         #show progress bar
         left_bar.current_p = player_power - 9
-        left_bar.show()
         right_bar.current_p = enemy_power - 9
+        left_bar.show()
         right_bar.show()
+        #show health bar
+        l_healbar.current_p = player_tank.health
+        r_healbar.current_p = enemy_tank.health
+        l_healbar.show()
+        r_healbar.show()
         #land
         pygame.draw.rect(gameDisplay,
                          GREEN,
