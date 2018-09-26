@@ -414,7 +414,7 @@ def game_loop():
                 if event.key == K_f:
                     Bullet(player_tank, player_power)
                     Spark(player_tank, YELLOW)
-                if event.key == K_RETURN:
+                if event.key == K_k:
                     Bullet(enemy_tank, enemy_power)
                     Spark(enemy_tank, YELLOW)
 
