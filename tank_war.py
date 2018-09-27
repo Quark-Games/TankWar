@@ -22,6 +22,7 @@ RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 LIGHT_BLUE = (153, 204, 255)
 LIGHT_BROWN = (74, 52, 38)
+LIGHT_YELLOW = (255, 255, 153)
 
 horizon = display_height - 100
 
@@ -84,6 +85,8 @@ class Tank:
     init_angle = 270
     family = []
 
+    energy = 100
+
     def __init__(self, x, y, b_color, w_color):
         self.x = x
         self.y = y
@@ -93,6 +96,7 @@ class Tank:
         self.angle = Tank.init_angle
         Tank.family.append(self)
         self.health = Tank.init_health
+        self.energy = Tank.energy
 
     @property
     def centerx(self):
@@ -267,7 +271,7 @@ class Bar:
     width = 140
     height = 20
     thickness = 3
-    font = pygame.font.SysFont("comicsansms",30)
+    font = pygame.font.SysFont(None, 30)
 
     def __init__(self, x, y, color, points, current_p, msg):
         self.x = x
@@ -290,7 +294,7 @@ class Bar:
                         (self.x, self.y, self.current_p * slice, Bar.height))
         #outside rect
         pygame.draw.rect(gameDisplay, BLACK,
-                        (self.x, self.y, Bar.width - slice, Bar.height),
+                        (self.x, self.y, Bar.width, Bar.height),
                          Bar.thickness)
         gameDisplay.blit(textSurf, (self.x, self.y - 20))
 
@@ -353,17 +357,23 @@ def game_loop():
     barrel_speed = 4
     barrel_limit = 60
 
-    player_power = 20
-    enemy_power = 20
+    player_power = 12
+    enemy_power = 12
 
     #create objects
     player_tank = Tank(tank_x, horizon, BLACK, BROWN)
     enemy_tank = Tank(enemy_x, horizon, BLACK, BROWN)
-    left_bar = Bar(10, 30, YELLOW, 13, player_power - 9, "Power: ")
-    right_bar = Bar(860, 30, YELLOW, 13, enemy_power - 9, "Power: ")
-    l_healbar = Bar(10, 80, RED, 6, 5, "Health: ")
-    r_healbar = Bar(860, 80, RED, 6, 5, "Health: ")
 
+    left_bar = Bar(10, 30, YELLOW, 12, 12, "Power: ")
+    right_bar = Bar(850, 30, YELLOW, 12, 12, "Power: ")
+
+    l_healbar = Bar(10, 80, RED, 5, 5, "Health: ")
+    r_healbar = Bar(850, 80, RED, 5, 5, "Health: ")
+
+    l_energy = Bar(10, 130, LIGHT_YELLOW, int(Tank.energy / 10),
+                   int(Tank.energy / 10) - 1, "Energy: ")
+    r_energy = Bar(850, 130, LIGHT_YELLOW, Tank.energy, Tank.energy, "Energy: ")
+    #set obstacle
     Obstacle.set()
 
     while True:
@@ -393,16 +403,16 @@ def game_loop():
 
         #power change
         if key_press[K_w]:
-            if player_power < 22:
+            if player_power < 12:
                 player_power += 1
         if key_press[K_s]:
-            if player_power > 10:
+            if player_power > 1:
                 player_power -= 1
         if key_press[K_p]:
-            if enemy_power < 22:
+            if enemy_power < 12:
                 enemy_power += 1
         if key_press[K_SEMICOLON]:
-            if enemy_power > 10:
+            if enemy_power > 1:
                 enemy_power -= 1
 
         for event in pygame.event.get():
@@ -412,8 +422,10 @@ def game_loop():
                 if event.key == K_ESCAPE:
                     quitgame()
                 if event.key == K_f:
-                    Bullet(player_tank, player_power)
                     Spark(player_tank, YELLOW)
+                    if player_tank.energy > 0:
+                        Bullet(player_tank, player_power + 10)
+                        player_tank.energy -= 25
                 if event.key == K_k:
                     Bullet(enemy_tank, enemy_power)
                     Spark(enemy_tank, YELLOW)
@@ -439,10 +451,9 @@ def game_loop():
         if enemy_tank.x <= Obstacle.x + Obstacle.width * 3:
             enemy_tank.x = Obstacle.x + Obstacle.width * 3
 
-
         #show progress bar
-        left_bar.current_p = player_power - 9
-        right_bar.current_p = enemy_power - 9
+        left_bar.current_p = player_power
+        right_bar.current_p = enemy_power
         left_bar.show()
         right_bar.show()
         l_healbar.current_p = player_tank.health
@@ -473,7 +484,14 @@ def game_loop():
         for explosion in Explosion.family:
             explosion.renew()
             explosion.show()
-
+        #energy
+        if player_tank.energy < Tank.energy:
+            player_tank.energy += 1
+        # print(player_tank.energy)
+        #show energy
+        l_energy.current_p = int(player_tank.energy / 10)
+        l_energy.show()
+        print(player_power)
         pygame.display.update()
         clock.tick(30)
 
