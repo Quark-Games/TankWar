@@ -290,7 +290,7 @@ class Bar:
         textSurf = self.text_objects
         #inside rect
         pygame.draw.rect(gameDisplay, self.color,
-                        (self.x, self.y, self.current_p * (Bar.width / self.points), Bar.height))
+                        (self.x, self.y, int(Bar.width / self.points * self.current_p), Bar.height))
         #outside rect
         pygame.draw.rect(gameDisplay, BLACK,
                         (self.x, self.y, Bar.width, Bar.height),
@@ -370,9 +370,8 @@ def game_loop():
     r_healbar = Bar(850, 80, RED, 5, 5, "Health: ")
 
     l_energy = Bar(10, 130, LIGHT_YELLOW, int(Tank.energy / 10),
-                   int(Tank.energy / 10), "Energy: ")
-    r_energy = Bar(850, 130, LIGHT_YELLOW, int(Tank.energy / 10),
-                   int(Tank.energy / 10), "Energy: ")
+                   int(Tank.energy / 10) - 1, "Energy: ")
+    r_energy = Bar(850, 130, LIGHT_YELLOW, Tank.energy, Tank.energy, "Energy: ")
     #set obstacle
     Obstacle.set()
 
@@ -422,15 +421,13 @@ def game_loop():
                 if event.key == K_ESCAPE:
                     quitgame()
                 if event.key == K_f:
+                    Spark(player_tank, YELLOW)
                     if player_tank.energy > 0:
                         Bullet(player_tank, player_power + 10)
-                        Spark(player_tank, YELLOW)
                         player_tank.energy -= 25
                 if event.key == K_k:
-                    if enemy_tank.energy > 0:
-                        Bullet(enemy_tank, enemy_power)
-                        Spark(enemy_tank, YELLOW)
-                        enemy_tank.energy -= 25
+                    Bullet(enemy_tank, enemy_power)
+                    Spark(enemy_tank, YELLOW)
 
         for each in Tank.family:
             #barrel check
@@ -489,13 +486,11 @@ def game_loop():
         #energy
         if player_tank.energy < Tank.energy:
             player_tank.energy += 1
-        if enemy_tank.energy < Tank.energy:
-            enemy_tank.energy += 1
+        # print(player_tank.energy)
         #show energy
         l_energy.current_p = int(player_tank.energy / 10)
         l_energy.show()
-        r_energy.current_p = int(enemy_tank.energy / 10)
-        r_energy.show()
+        print(player_power)
         pygame.display.update()
         clock.tick(30)
 
