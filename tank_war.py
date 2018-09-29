@@ -14,7 +14,7 @@ display_height = 600
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 200, 0)
-BRIGHT_RED = (255, 0, 0)
+BRIGHT_RED = (255, 20, 0)
 BRIGHT_GREEN = (0, 255, 0)
 GREY = (77, 79, 74)
 BROWN = (102, 74, 50)
@@ -30,111 +30,146 @@ gameDisplay = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption('TANK WAR')
 clock = pygame.time.Clock()
 
+class Buttons:
 
-class Bullet:
-    init_img = pygame.image.load("bullet.png")
-    gravity = 0.35
-    air_resist = 0.994
-    family = []
+    font = pygame.font.SysFont(None, 30)
 
-    def __init__(self, tank, power):
-        self.x = tank.centerx - 4
-        self.y = tank.centery - 10
-        self.angle = tank.angle
-        self.speed_x = math.cos(math.radians(self.angle)) * power
-        self.speed_y = math.sin(math.radians(self.angle)) * power
-        Bullet.family.append(self)
-
-    @property
-    def img(self):
-        return pygame.transform.rotate(Bullet.init_img, -self.angle)
-
-    def renew(self):
-        self.speed_x *= Bullet.air_resist
-        self.speed_y += Bullet.gravity
-        self.angle = rtan(self.speed_x, self.speed_y) % 360
-        self.x += self.speed_x
-        self.y += self.speed_y
-        # hit ground
-        if self.y > horizon:
-            Explosion(int(self.x), int(self.y))
-            for each in Tank.family:
-                if self.x > each.x and self.x < each.x + each.tankbase_w:
-                    each.health -= 1
-            del Bullet.family[Bullet.family.index(self)]
-        # hit obstacles
-        for rect in Obstacle.rects:
-            if rect.collidepoint((self.x, self.y)):
-                Explosion(int(self.x), int(self.y))
-                del Bullet.family[Bullet.family.index(self)]
-
-    def show(self):
-        gameDisplay.blit(self.img, (self.x, self.y))
-
-
-class Tank:
-
-    init_health = 5
-    tankbase_h = 15
-    tankbase_w = 60
-    top_r = tankbase_h
-    tank_wheel_r = int(tankbase_h / 2)
-    tank_wheel_d = tankbase_h
-
-    barrel_length = 30
-    init_angle = 270
-    family = []
-
-    energy = 100
-
-    def __init__(self, x, y, b_color, w_color):
+    def __init__(self, x, y, w, h, ac_color, ic_color, text):
         self.x = x
         self.y = y
-        self.b_color = b_color
-        self.w_color = w_color
-        self.length = Tank.barrel_length
-        self.angle = Tank.init_angle
-        Tank.family.append(self)
-        self.health = Tank.init_health
-        self.energy = Tank.energy
+        self.w = w
+        self.h = h
+        self.ac_color = ac_color
+        self.ic_color = ic_color
+        self.text = text
+        self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
 
     @property
-    def centerx(self):
-        return self.x + int(Tank.tankbase_w / 2)
+    def text_objects(self):
+        bit_map = Buttons.font.render(self.text, True, BLACK)
+        return bit_map, bit_map.get_rect()
+
+    def show_ac(self):
+        pygame.draw.rect(gameDisplay, self.ac_color, self.rect)
+
+    def show_ic(self):
+        pygame.draw.rect(gameDisplay, self.ic_color, self.rect)
 
     @property
-    def centery(self):
-        return self.y - Tank.tankbase_h - Tank.tank_wheel_r
+    def collide(self):
+        mouse = pygame.mouse.get_pos()
+        if self.rect.collidepoint(mouse):
+            return True
+        else:
+            return False
+    @property
+    def click(self):
+        click = pygame.mouse.get_pressed()
+        if click[0] == 1:
+            return True
+
+    def write(self):
+        smallText = pygame.font.SysFont("comicsansms", 45)
+        TitleSurf, TitleRect = self.text_objects
+        TitleRect.center = (self.x+(self.w/2), self.y+(self.h/2))
+        gameDisplay.blit(TitleSurf, TitleRect)
+
+
+class Msg:
+
+    def __init__(self, x, y, text, size):
+        self.x = x
+        self.y = y
+        self.text = text
+        self.size = size
+        self.font = pygame.font.SysFont(None, self.size)
 
     @property
-    def end_x(self):
-        return self.centerx + math.cos(math.radians(self.angle)) * self.length
+    def text_objects(self):
+        bit_map = self.font.render(self.text, True, BLACK)
+        return bit_map, bit_map.get_rect()
+
+    def show(self):
+        textSurf, textRect = self.text_objects
+        textRect.center = (self.x, self.y)
+        gameDisplay.blit(textSurf, textRect)
+
+
+class Bar:
+
+    width = 140
+    height = 20
+    thickness = 3
+    font = pygame.font.SysFont(None, 30)
+
+    def __init__(self, x, y, color, points, current_p, msg):
+        self.x = x
+        self.y = y
+        self.color = color
+        self.points = points
+        self.current_p = current_p
+        self.msg = msg
 
     @property
-    def end_y(self):
-        return self.centery + math.sin(math.radians(self.angle)) * self.length
+    def text_objects(self):
+        bit_map = Bar.font.render(self.msg + str(self.current_p), True, BLACK)
+        return bit_map
 
-    def show_tank(self):
-        #top
-        pygame.draw.circle(gameDisplay, self.b_color,
-                          (self.centerx, self.centery), Tank.top_r)
-        #base
-        pygame.draw.rect(gameDisplay, self.b_color,
-                        (self.x, self.y - Tank.tankbase_h - Tank.tank_wheel_r,
-                         Tank.tankbase_w, Tank.tankbase_h))
-        #wheel
-        for each in range(1, 5):
-            pygame.draw.circle(gameDisplay, self.w_color,
-                              (self.x + (Tank.tank_wheel_d * each - Tank.tank_wheel_r),
-                               self.y - Tank.tank_wheel_r), Tank.tank_wheel_r)
-        #barrel
-        pygame.draw.line(gameDisplay,
-                         self.b_color,
-                         (self.centerx, self.centery),
-                         (self.end_x, self.end_y),
-                         8)
+    def show(self):
+        textSurf = self.text_objects
+        #inside rect
+        if self.current_p <= 0:
+            self.current_p = 0
+        pygame.draw.rect(gameDisplay, self.color,
+                        (self.x, self.y, self.current_p * (Bar.width / self.points), Bar.height))
+        #outside rect
+        pygame.draw.rect(gameDisplay, BLACK,
+                        (self.x, self.y, Bar.width, Bar.height),
+                         Bar.thickness)
+        gameDisplay.blit(textSurf, (self.x, self.y - 20))
 
 
+class Spark:
+
+    init_length = 1
+    limit = 20
+    ang_range = 25
+    dense = 2
+
+    family = []
+
+    def __init__(self, tank, color):
+        self.tank = tank
+        self.color = color
+        self.angle = tank.angle
+        self.length = Spark.init_length
+        self.change = 1
+        Spark.family.append(self)
+
+    @property
+    def x(self):
+        return self.tank.end_x
+
+    @property
+    def y(self):
+        return self.tank.end_y
+
+    def show(self):
+        for ang in range(self.angle - Spark.ang_range,
+                         self.angle + Spark.ang_range + 1,
+                         int(Spark.ang_range / self.dense)):
+            x = int(self.x + math.sin(math.radians(90 - ang)) * self.length)
+            y = int(self.y + math.cos(math.radians(90 - ang)) * self.length)
+            pygame.draw.circle(gameDisplay, self.color, (x, y), 2)
+        self.length += self.change
+        self.change += 1
+
+    def renew(self):
+        self.length += 2
+        if self.length >= Spark.limit:
+            del Spark.family[Spark.family.index(self)]
+
+            
 class Explosion:
     init_radius = 3
     max_radius = 50
@@ -202,45 +237,45 @@ class Explosion:
         self.radius += 1
 
 
-class Spark:
-
-    init_length = 1
-    limit = 20
-    ang_range = 25
-    dense = 2
-
+class Bullet:
+    init_img = pygame.image.load("bullet.png")
+    gravity = 0.35
+    air_resist = 0.994
     family = []
 
-    def __init__(self, tank, color):
-        self.tank = tank
-        self.color = color
+    def __init__(self, tank, power):
+        self.x = tank.centerx - 4
+        self.y = tank.centery - 10
         self.angle = tank.angle
-        self.length = Spark.init_length
-        self.change = 1
-        Spark.family.append(self)
+        self.speed_x = math.cos(math.radians(self.angle)) * power
+        self.speed_y = math.sin(math.radians(self.angle)) * power
+        Bullet.family.append(self)
 
     @property
-    def x(self):
-        return self.tank.end_x
-
-    @property
-    def y(self):
-        return self.tank.end_y
-
-    def show(self):
-        for ang in range(self.angle - Spark.ang_range,
-                         self.angle + Spark.ang_range + 1,
-                         int(Spark.ang_range / self.dense)):
-            x = int(self.x + math.sin(math.radians(90 - ang)) * self.length)
-            y = int(self.y + math.cos(math.radians(90 - ang)) * self.length)
-            pygame.draw.circle(gameDisplay, self.color, (x, y), 2)
-        self.length += self.change
-        self.change += 1
+    def img(self):
+        return pygame.transform.rotate(Bullet.init_img, -self.angle)
 
     def renew(self):
-        self.length += 2
-        if self.length >= Spark.limit:
-            del Spark.family[Spark.family.index(self)]
+        self.speed_x *= Bullet.air_resist
+        self.speed_y += Bullet.gravity
+        self.angle = rtan(self.speed_x, self.speed_y) % 360
+        self.x += self.speed_x
+        self.y += self.speed_y
+        # hit ground
+        if self.y > horizon:
+            Explosion(int(self.x), int(self.y))
+            for each in Tank.family:
+                if self.x > each.x and self.x < each.x + each.tankbase_w:
+                    each.health -= 1
+            del Bullet.family[Bullet.family.index(self)]
+        # hit obstacles
+        for rect in Obstacle.rects:
+            if rect.collidepoint((self.x, self.y)):
+                Explosion(int(self.x), int(self.y))
+                del Bullet.family[Bullet.family.index(self)]
+
+    def show(self):
+        gameDisplay.blit(self.img, (self.x, self.y))
 
 
 class Obstacle:
@@ -266,72 +301,67 @@ class Obstacle:
             Obstacle.rects.append(rect)
 
 
-class Bar:
+class Tank:
 
-    width = 140
-    height = 20
-    thickness = 3
-    font = pygame.font.SysFont(None, 30)
+    init_health = 5
+    tankbase_h = 15
+    tankbase_w = 60
+    top_r = tankbase_h
+    tank_wheel_r = int(tankbase_h / 2)
+    tank_wheel_d = tankbase_h
 
-    def __init__(self, x, y, color, points, current_p, msg):
+    barrel_length = 30
+    init_angle = 270
+    family = []
+
+    energy = 100
+
+    def __init__(self, x, y, b_color, w_color):
         self.x = x
         self.y = y
-        self.color = color
-        self.points = points
-        self.current_p = current_p
-        self.msg = msg
+        self.b_color = b_color
+        self.w_color = w_color
+        self.length = Tank.barrel_length
+        self.angle = Tank.init_angle
+        Tank.family.append(self)
+        self.health = Tank.init_health
+        self.energy = Tank.energy
 
     @property
-    def text_objects(self):
-        bit_map = Bar.font.render(self.msg + str(self.current_p), True, BLACK)
-        return bit_map
+    def centerx(self):
+        return self.x + int(Tank.tankbase_w / 2)
 
-    def show(self):
-        textSurf = self.text_objects
-        #inside rect
-        pygame.draw.rect(gameDisplay, self.color,
-                        (self.x, self.y, self.current_p * (Bar.width / self.points), Bar.height))
-        #outside rect
-        pygame.draw.rect(gameDisplay, BLACK,
-                        (self.x, self.y, Bar.width, Bar.height),
-                         Bar.thickness)
-        gameDisplay.blit(textSurf, (self.x, self.y - 20))
+    @property
+    def centery(self):
+        return self.y - Tank.tankbase_h - Tank.tank_wheel_r
 
+    @property
+    def end_x(self):
+        return self.centerx + math.cos(math.radians(self.angle)) * self.length
 
-class Buttons:
-    def __init__(self, x, y, w, h, ac_color, ic_color, text):
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
-        self.ac_color = ac_color
-        self.ic_color = ic_color
-        self.text = text
-        self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
+    @property
+    def end_y(self):
+        return self.centery + math.sin(math.radians(self.angle)) * self.length
 
-    def show_ac(self):
-        pygame.draw.rect(gameDisplay, self.ac_color, self.rect)
-
-    def show_ic(self):
-        pygame.draw.rect(gameDisplay, self.ic_color, self.rect)
-
-    def collide(self):
-        mouse = pygame.mouse.get_pos()
-        if self.rect.collidepoint(mouse):
-            return True
-        else:
-            return False
-
-    def click(self):
-        click = pygame.mouse.get_pressed()
-        if click[0] == 1:
-            return True
-
-    def write(self):
-        smallText = pygame.font.SysFont("comicsansms", 45)
-        TitleSurf, TitleRect = text_objects(self.text,smallText)
-        TitleRect.center = (self.x+(self.w/2), self.y+(self.h/2))
-        gameDisplay.blit(TitleSurf, TitleRect)
+    def show_tank(self):
+        #top
+        pygame.draw.circle(gameDisplay, self.b_color,
+                          (self.centerx, self.centery), Tank.top_r)
+        #base
+        pygame.draw.rect(gameDisplay, self.b_color,
+                        (self.x, self.y - Tank.tankbase_h - Tank.tank_wheel_r,
+                         Tank.tankbase_w, Tank.tankbase_h))
+        #wheel
+        for each in range(1, 5):
+            pygame.draw.circle(gameDisplay, self.w_color,
+                              (self.x + (Tank.tank_wheel_d * each - Tank.tank_wheel_r),
+                               self.y - Tank.tank_wheel_r), Tank.tank_wheel_r)
+        #barrel
+        pygame.draw.line(gameDisplay,
+                         self.b_color,
+                         (self.centerx, self.centery),
+                         (self.end_x, self.end_y),
+                         8)
 
 
 def rtan(x, y):
@@ -342,10 +372,41 @@ def rtan(x, y):
         return angle + 180
 
 def quitgame():
+    Obstacle.family = []
+    Tank.family = []
     pygame.quit()
     quit()
 
+def button(obj):
+    obj.show_ic()
+    if obj.collide:
+        obj.show_ac()
+        if obj.click:
+            return True
+    obj.write()
+
+def end():
+    quit_b = Buttons(200, 450, 120, 50, BRIGHT_GREEN, GREEN, "QUIT")
+    replay_b = Buttons(700, 450, 120, 50, BRIGHT_GREEN, GREEN, "REPLAY")
+    title = Msg(display_width / 2, display_height / 3, "GAME OVER", 80)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                quitgame()
+            if event.type == pygame.KEYDOWN:
+                if event.key == K_ESCAPE:
+                    quitgame()
+        # gameDisplay.fill(LIGHT_BLUE)
+        if button(quit_b):
+            quitgame()
+        if button(replay_b):
+            game_loop()
+        title.show()
+        pygame.display.update()
+        clock.tick(30)
+
 def game_loop():
+    print("Game Started")
     global barrel_angle
 
     tank_x = 300
@@ -431,7 +492,6 @@ def game_loop():
                         Bullet(enemy_tank, enemy_power)
                         Spark(enemy_tank, YELLOW)
                         enemy_tank.energy -= 25
-
         for each in Tank.family:
             #barrel check
             if each.angle >= 270 + barrel_limit:
@@ -445,7 +505,7 @@ def game_loop():
                 each.x = display_width - each.tankbase_w
             #check Health
             if each.health <= 0:
-                quitgame()
+                end()
 
         #obstacle check
         if player_tank.x + player_tank.tankbase_w >= Obstacle.x:
@@ -501,5 +561,6 @@ def game_loop():
 
 try:
     game_loop()
+    # end()
 except KeyboardInterrupt:
     quitgame()
