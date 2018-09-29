@@ -169,7 +169,7 @@ class Spark:
         if self.length >= Spark.limit:
             del Spark.family[Spark.family.index(self)]
 
-            
+
 class Explosion:
     init_radius = 3
     max_radius = 50
@@ -372,8 +372,6 @@ def rtan(x, y):
         return angle + 180
 
 def quitgame():
-    Obstacle.family = []
-    Tank.family = []
     pygame.quit()
     quit()
 
@@ -407,6 +405,7 @@ def end():
 
 def game_loop():
     print("Game Started")
+
     global barrel_angle
 
     tank_x = 300
@@ -423,7 +422,7 @@ def game_loop():
     #create objects
     player_tank = Tank(tank_x, horizon, BLACK, BROWN)
     enemy_tank = Tank(enemy_x, horizon, BLACK, BROWN)
-
+    print(player_tank.health)
     left_bar = Bar(10, 30, YELLOW, 12, 12, "Power: ")
     right_bar = Bar(850, 30, YELLOW, 12, 12, "Power: ")
 
