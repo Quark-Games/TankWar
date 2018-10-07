@@ -23,11 +23,16 @@ YELLOW = (255, 255, 0)
 LIGHT_BLUE = (153, 204, 255)
 LIGHT_BROWN = (74, 52, 38)
 LIGHT_YELLOW = (255, 255, 153)
+DARK_ORANGE = (204, 102, 0)
+LIGHT_ORANGE = (255, 153, 51)
 
 horizon = display_height - 100
 
 gameDisplay = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption('TANK WAR')
+tankicon = pygame.image.load("tank_img.png")
+terrianimg = pygame.image.load("tankwar_terrian.png")
+pygame.display.set_icon(tankicon)
 clock = pygame.time.Clock()
 
 class Buttons:
@@ -274,6 +279,7 @@ class Bullet:
                 Explosion(int(self.x), int(self.y))
                 del Bullet.family[Bullet.family.index(self)]
 
+
     def show(self):
         gameDisplay.blit(self.img, (self.x, self.y))
 
@@ -383,10 +389,17 @@ def button(obj):
             return True
     obj.write()
 
-def end():
-    quit_b = Buttons(200, 450, 120, 50, BRIGHT_GREEN, GREEN, "QUIT")
-    replay_b = Buttons(700, 450, 120, 50, BRIGHT_GREEN, GREEN, "REPLAY")
-    title = Msg(display_width / 2, display_height / 3, "GAME OVER", 80)
+def game_renew():
+    Bullet.family = []
+    Obstacle.rects = []
+    Explosion.family = []
+    Tank.family = []
+
+def paused():
+    contin_b = Buttons(750, 450, 140, 70, BRIGHT_GREEN, GREEN, "CONTINUE")
+    restart_b = Buttons(150, 450, 140, 70, BRIGHT_GREEN, GREEN, "RESTART")
+    title = Msg(display_width / 2, display_height / 3, "PAUSED", 80)
+    title.show()
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -394,17 +407,56 @@ def end():
             if event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
                     quitgame()
-        # gameDisplay.fill(LIGHT_BLUE)
+        if button(contin_b):
+            return None
+        if button(restart_b):
+            game_renew()
+            return game_loop()
+        pygame.display.update()
+        clock.tick(30)
+
+def game_intro():
+    quit_b = Buttons(750, 450, 140, 70, LIGHT_ORANGE, DARK_ORANGE, "QUIT")
+    play_b = Buttons(150, 450, 140, 70, LIGHT_ORANGE, DARK_ORANGE, "PLAY")
+    title = Msg(display_width / 2, display_height / 3, "TANK WAR", 80)
+    gameDisplay.blit(terrianimg, (0, 0))
+    title.show()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                quitgame()
+            if event.type == pygame.KEYDOWN:
+                if event.key == K_ESCAPE:
+                    quitgame()
         if button(quit_b):
-            quitgame()
+            return quitgame()
+        if button(play_b):
+            return game_loop()
+        pygame.display.update()
+        clock.tick(30)
+
+def end():
+    quit_b = Buttons(750, 380, 140, 60, LIGHT_YELLOW, YELLOW, "QUIT")
+    replay_b = Buttons(150, 380, 140, 60, LIGHT_YELLOW, YELLOW, "START AGAIN")
+    title = Msg(display_width / 2, display_height / 3, "GAME OVER", 80)
+    gameDisplay.blit(terrianimg, (0, 0))
+    title.show()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                quitgame()
+            if event.type == pygame.KEYDOWN:
+                if event.key == K_ESCAPE:
+                    quitgame()
+        if button(quit_b):
+            return quitgame()
         if button(replay_b):
-            game_loop()
-        title.show()
+            game_renew()
+            return game_intro()
         pygame.display.update()
         clock.tick(30)
 
 def game_loop():
-    print("Game Started")
 
     global barrel_angle
 
@@ -422,7 +474,7 @@ def game_loop():
     #create objects
     player_tank = Tank(tank_x, horizon, BLACK, BROWN)
     enemy_tank = Tank(enemy_x, horizon, BLACK, BROWN)
-    print(player_tank.health)
+    # print(player_tank.health)
     left_bar = Bar(10, 30, YELLOW, 12, 12, "Power: ")
     right_bar = Bar(850, 30, YELLOW, 12, 12, "Power: ")
 
@@ -491,6 +543,9 @@ def game_loop():
                         Bullet(enemy_tank, enemy_power)
                         Spark(enemy_tank, YELLOW)
                         enemy_tank.energy -= 25
+                if event.key == K_SPACE:
+                    paused()
+
         for each in Tank.family:
             #barrel check
             if each.angle >= 270 + barrel_limit:
@@ -557,9 +612,13 @@ def game_loop():
         r_energy.show()
         pygame.display.update()
         clock.tick(30)
+        # print(len(Bullet.family))
+        # print(player_tank.health)
+        # print(Tank.family)
+        # print(enemy_tank.health)
 
 try:
-    game_loop()
-    # end()
+    game_intro()
+
 except KeyboardInterrupt:
     quitgame()
