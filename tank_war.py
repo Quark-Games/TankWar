@@ -383,11 +383,12 @@ def quitgame():
     quit()
 
 def button(obj):
-    obj.show_ic()
     if obj.collide:
         obj.show_ac()
         if obj.click:
             return True
+    else:
+        obj.show_ic()
     obj.write()
 
 def setton(obj):
@@ -455,28 +456,35 @@ def settings():
                           texts[int(ind)] + ": " + k_name, 23))
 
     while True:
-        for event in pygame.event.get():
+        events = pygame.event.get()
+
+        for event in events:
             if event.type == pygame.QUIT:
+                with open("l_key.txt", "w") as file:
+                    file.write(','.join(map(str, l_keys)))
                 quitgame()
             if event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
+                    with open("l_key.txt", "w") as file:
+                        file.write(','.join(map(str, l_keys)))
                     quitgame()
+
         if button(back_b):
+                file.write(','.join(map(str, l_keys)))
             return None
         if button(play_b):
+            with open("l_key.txt", "w") as file:
+                file.write(','.join(map(str, l_keys)))
             return game_loop()
 
         for each in set_family:
             if setton(each):
-                for event in pygame.event.get():
+                for event in events:
                     if event.type == pygame.KEYDOWN:
-                        if event.key == K_ESCAPE:
-                            quitgame()
                         num = set_family.index(each)
                         l_keys[num] = event.key
                         each.text = texts[num] + ": " + pygame.key.name(int(l_keys[num]))
-        with open("l_key.txt", "w") as file:
-            file.write(','.join(map(str, l_keys)))
+
         # print(str(clock.get_fps()))
         pygame.display.update()
         clock.tick(30)
