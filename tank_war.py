@@ -28,7 +28,7 @@ LIGHT_ORANGE = (255, 153, 51)
 
 horizon = display_height - 100
 
-gameDisplay = pygame.display.set_mode((display_width, display_height))
+gameDisplay = pygame.display.set_mode((display_width, display_height), FULLSCREEN)
 pygame.display.set_caption('TANK WAR')
 tankicon = pygame.image.load("tank_img.png")
 terrianimg = pygame.image.load("tankwar_terrian.png")
@@ -505,6 +505,7 @@ def settings():
 
     while True:
         gameDisplay.fill(LIGHT_BLUE)
+        title.show()
 
         events = pygame.event.get()
 
