@@ -459,7 +459,6 @@ def settings():
     title = Msg(display_width / 2, display_height / 6, "SETTINGS", 80)
 
 
-
     l_set_family = []
     r_set_family = []
     texts = ("BARREL LEFT", "BARREL RIGHT", "TANK LEFT",
