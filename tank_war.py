@@ -470,6 +470,7 @@ def settings():
                     quitgame()
 
         if button(back_b):
+            with open("l_key.txt", "w") as file:
                 file.write(','.join(map(str, l_keys)))
             return None
         if button(play_b):
