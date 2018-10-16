@@ -122,10 +122,10 @@ class Bar:
         return bit_map
 
     def show(self):
-        textSurf = self.text_objects
-        #inside rect
         if self.current_p <= 0:
             self.current_p = 0
+        textSurf = self.text_objects
+        #inside rect
         pygame.draw.rect(gameDisplay, self.color,
                         (self.x, self.y, self.current_p * (Bar.width / self.points), Bar.height))
         #outside rect
@@ -174,6 +174,31 @@ class Spark:
         self.length += 2
         if self.length >= Spark.limit:
             del Spark.family[Spark.family.index(self)]
+
+
+class Crack:
+
+    img = pygame.image.load("crack.png")
+    img2 = pygame.image.load("crack2.png")
+    imgs = [img, img2]
+    rounds = 100
+    family = []
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.round = Crack.rounds
+        Crack.family.append(self)
+        self.image = Crack.imgs[random.randint(0, len(Crack.imgs) - 1)]
+
+    def show(self):
+        gameDisplay.blit(self.image, (self.x - 13, horizon))
+
+    def renew(self):
+        if self.round > 0:
+            self.round -= 1
+        else:
+            del Crack.family[Crack.family.index(self)]
 
 
 class Explosion:
@@ -269,7 +294,8 @@ class Bullet:
         self.y += self.speed_y
         # hit ground
         if self.y > horizon:
-            Explosion(int(self.x), int(self.y))
+            Crack(self.x, self.y)
+            Explosion(int(self.x), horizon)
             for each in Tank.family:
                 if self.x > each.x and self.x < each.x + each.tankbase_w:
                     each.health -= 1
@@ -416,6 +442,9 @@ def paused():
             if event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
                     quitgame()
+                if event.key == K_RETURN:
+                    game_renew()
+                    return None
         if button(contin_b):
             return None
         if button(restart_b):
@@ -425,59 +454,97 @@ def paused():
         clock.tick(30)
 
 def settings():
-    back_b = Buttons(750, 500, 140, 70, BRIGHT_GREEN, GREEN, "BACK", 30)
-    play_b = Buttons(150, 500, 140, 70, BRIGHT_GREEN, GREEN, "PLAY", 30)
+    back_b = Buttons(750, 520, 120, 50, BRIGHT_GREEN, GREEN, "BACK", 30)
+    play_b = Buttons(150, 520, 120, 50, BRIGHT_GREEN, GREEN, "PLAY", 30)
     title = Msg(display_width / 2, display_height / 6, "SETTINGS", 80)
-    gameDisplay.fill(LIGHT_BLUE)
-    title.show()
 
-    set_family = []
+
+
+    l_set_family = []
+    r_set_family = []
     texts = ("BARREL LEFT", "BARREL RIGHT", "TANK LEFT",
              "TANK RIGHT", "POWER UP", "POWER DOWN", "FIRE")
 
     with open("l_key.txt", "r") as file:
         l_keys = file.read().split(",")
+    with open("r_key.txt", "r") as file:
+        r_keys = file.read().split(",")
+
     for each in l_keys:
         ind = l_keys.index(each)
         k_name = pygame.key.name(int(l_keys[ind]))
         pos = ind + 1
-        if ind == 6:
-            button_x = 150
         if (ind + 1) % 2 == 0:
             pos = ind
         if (ind + 1) % 2 == 0:
-            button_x = 300
+            button_x = 250
+        # if ind == 6:
+        #     button_x = 150
         else:
-            button_x = 100
-        set_family.append(Buttons(button_x,
+            button_x = 50
+        l_set_family.append(Buttons(button_x,
                           int(display_height / 14) * pos + 110, 150, 60,
                           BRIGHT_GREEN, GREEN,
                           texts[int(ind)] + ": " + k_name, 23))
+    for each in r_keys:
+        r_ind = r_keys.index(each)
+        r_k_name = pygame.key.name(int(r_keys[r_ind]))
+        r_pos = r_ind + 1
+        # if r_ind == 6:
+        #     r_button_x = 650
+        if (r_ind + 1) % 2 == 0:
+            r_pos = r_ind
+        if (r_ind + 1) % 2 == 0:
+            r_button_x = 800
+        else:
+            r_button_x = 600
+        r_set_family.append(Buttons(r_button_x,
+                          int(display_height / 14) * r_pos + 110, 150, 60,
+                          BRIGHT_GREEN, GREEN,
+                          texts[int(r_ind)] + ": " + r_k_name, 23))
+    print(r_set_family)
 
     while True:
+        gameDisplay.fill(LIGHT_BLUE)
+        title.show()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quitgame()
             if event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
                     quitgame()
+                if event.key == K_RETURN:
+                    return None
         if button(back_b):
             return None
         if button(play_b):
             return game_loop()
 
-        for each in set_family:
+        for each in l_set_family:
             if setton(each):
                 for event in pygame.event.get():
                     if event.type == pygame.KEYDOWN:
                         if event.key == K_ESCAPE:
                             quitgame()
-                        num = set_family.index(each)
+                        num = l_set_family.index(each)
                         l_keys[num] = event.key
                         each.text = texts[num] + ": " + pygame.key.name(int(l_keys[num]))
+        for each in r_set_family:
+            if setton(each):
+                for event in pygame.event.get():
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == K_ESCAPE:
+                            quitgame()
+                        num = r_set_family.index(each)
+                        r_keys[num] = event.key
+                        each.text = texts[num] + ": " + pygame.key.name(int(r_keys[num]))
+
         with open("l_key.txt", "w") as file:
             file.write(','.join(map(str, l_keys)))
+        with open("r_key.txt", "w") as file:
+            file.write(','.join(map(str, r_keys)))
         # print(str(clock.get_fps()))
+
         pygame.display.update()
         clock.tick(30)
 
@@ -498,6 +565,8 @@ def game_intro():
                     quitgame()
                 if event.key == K_s:
                     settings()
+                if event.key == K_RETURN:
+                    game_loop()
         gameDisplay.fill(LIGHT_BLUE)
         gameDisplay.blit(terrianimg, (0, 0))
         gameDisplay.blit(cloud_1, (bigcloud_x, bigcloud_y))
@@ -518,14 +587,15 @@ def game_intro():
         pygame.display.update()
         clock.tick(30)
 
-def end():
-    quit_b = Buttons(750, 380, 140, 60, LIGHT_YELLOW, YELLOW, "QUIT", 30)
-    replay_b = Buttons(150, 380, 140, 60, LIGHT_YELLOW, YELLOW, "START AGAIN", 30)
-    title = Msg(display_width / 2, display_height / 3, "GAME OVER", 80)
+def end(text):
+    quit_b = Buttons(750, 390, 140, 60, LIGHT_YELLOW, YELLOW, "QUIT", 30)
+    replay_b = Buttons(150, 390, 140, 60, LIGHT_YELLOW, YELLOW, "START AGAIN", 30)
+    title = Msg(display_width / 2, display_height / 3 - 60, "GAME OVER", 80)
     bigcloud_x = random.randint(0, display_width - 500)
     bigcloud_y = random.randint(0, int(display_height / 3))
     tinycloud_x = random.randint(500, display_width)
     tinycloud_y = random.randint(0, int(display_height / 3))
+    win_msg = Msg(display_width / 2, display_height / 2 - 60, text, 40)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -533,11 +603,16 @@ def end():
             if event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
                     quitgame()
+                if event.key == K_RETURN:
+                    game_renew()
+                    game_intro()
+
         gameDisplay.fill(LIGHT_BLUE)
         gameDisplay.blit(terrianimg, (0, 0))
         gameDisplay.blit(cloud_1, (bigcloud_x, bigcloud_y))
         gameDisplay.blit(cloud_2, (tinycloud_x, tinycloud_y))
         title.show()
+        win_msg.show()
         if bigcloud_x < -380:
             bigcloud_x = random.randint(0, 500) + display_width
         else:
@@ -642,11 +717,13 @@ def game_loop():
                         Bullet(player_tank, player_power + 10)
                         Spark(player_tank, YELLOW)
                         player_tank.energy -= 25
+
                 if event.key == K_k:
                     if enemy_tank.energy > 0:
                         Bullet(enemy_tank, enemy_power + 10)
                         Spark(enemy_tank, YELLOW)
                         enemy_tank.energy -= 25
+
                 if event.key == K_SPACE:
                     paused()
 
@@ -663,7 +740,10 @@ def game_loop():
                 each.x = display_width - each.tankbase_w
             #check Health
             if each.health <= 0:
-                end()
+                if each == player_tank:
+                    return end("RIGHT SIDE WON")
+                else:
+                    return end("LEFT SIDE WON")
 
         #obstacle check
         if player_tank.x + player_tank.tankbase_w >= Obstacle.x:
@@ -704,6 +784,10 @@ def game_loop():
         for explosion in Explosion.family:
             explosion.renew()
             explosion.show()
+        #cracks
+        for each in Crack.family:
+            each.renew()
+            each.show()
         #energy
         if player_tank.energy < Tank.energy:
             player_tank.energy += 1
@@ -719,6 +803,6 @@ def game_loop():
 
 try:
     game_intro()
-    # settings()
+
 except KeyboardInterrupt:
     quitgame()
